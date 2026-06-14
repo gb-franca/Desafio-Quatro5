@@ -42,6 +42,13 @@ export const Dashboard: React.FC = () => {
     const totalAssignedCount = tasks.filter(
       (task) => task.assigneeId === user.id && task.status !== 'DONE'
     ).length;
+    const overdueTasksCount = tasks.filter((task) => {
+      if (task.assigneeId !== user.id) return false;
+      if (task.status === 'DONE') return false;
+      const dueDate = new Date(task.dueDate);
+      return dueDate < today;
+    }).length;
+
     return {
       id: user.id,
       name: user.name,
@@ -49,8 +56,22 @@ export const Dashboard: React.FC = () => {
       role: user.role,
       doingCount: doingTasksCount,
       totalAssigned: totalAssignedCount,
+      overdueCount: overdueTasksCount,
     };
   });
+
+  // Agrupa os dados de carga de trabalho por cargo/setor
+  const groupedWorkload = React.useMemo(() => {
+    const groups: { [key: string]: typeof workloadData } = {};
+    workloadData.forEach((user) => {
+      const sector = user.role.trim() || 'Sem Setor';
+      if (!groups[sector]) {
+        groups[sector] = [];
+      }
+      groups[sector].push(user);
+    });
+    return groups;
+  }, [workloadData]);
 
   // Filtra membros sobrecarregados (>= 3 em execução) e ociosos (0 em execução)
   const overloadedUsers = workloadData.filter((u) => u.doingCount >= 3);
@@ -223,49 +244,81 @@ export const Dashboard: React.FC = () => {
               Nenhum membro cadastrado.
             </p>
           ) : (
-            <div className="flex-grow overflow-y-auto pr-1 space-y-3">
-              {workloadData.map((user) => {
-                let progressColor = 'bg-emerald-500';
-                let badgeColor = 'bg-emerald-950/40 text-emerald-400 border-emerald-900/30';
-
-                if (user.doingCount === 0) {
-                  progressColor = 'bg-zinc-800';
-                  badgeColor = 'bg-zinc-850 text-zinc-400 border-zinc-700/30';
-                } else if (user.doingCount === 2) {
-                  progressColor = 'bg-brand-yellow';
-                  badgeColor = 'bg-amber-950/40 text-brand-yellow border-amber-900/30';
-                } else if (user.doingCount >= 3) {
-                  progressColor = 'bg-red-500';
-                  badgeColor = 'bg-red-950/40 text-red-400 border-red-900/30';
-                }
-
-                const percentage = user.doingCount === 0 ? 0 : Math.min((user.doingCount / 4) * 100, 100);
-
-                return (
-                  <div key={user.id} className="flex flex-col gap-2 p-3 rounded-lg bg-brand-cardBg/40 border border-brand-border/30 hover:border-brand-border transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-8 h-8 rounded-full bg-brand-border flex items-center justify-center font-bold text-xs text-brand-yellow border border-brand-border shrink-0">
-                          {user.initials}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-gray-200 truncate">{user.name}</p>
-                          <p className="text-xs text-gray-500 truncate">{user.role}</p>
-                        </div>
-                      </div>
-                      <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded border uppercase tracking-wider shrink-0 ${badgeColor}`}>
-                        {user.doingCount} em andamento
-                      </span>
-                    </div>
-                    <div className="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full ${progressColor} transition-all duration-500`}
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </div>
+            <div className="flex-grow overflow-y-auto pr-1 space-y-4">
+              {Object.entries(groupedWorkload).map(([sector, members]) => (
+                <div key={sector} className="space-y-2">
+                  <div className="flex items-center justify-between border-b border-brand-border/40 pb-1 mb-2">
+                    <span className="text-xs font-bold text-brand-yellow uppercase tracking-wider">
+                      {sector}
+                    </span>
+                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700/30 uppercase tracking-wider">
+                      {members.length} {members.length === 1 ? 'membro' : 'membros'}
+                    </span>
                   </div>
-                );
-              })}
+                  <div className="space-y-2">
+                    {members.map((user) => {
+                      let progressColor = 'bg-emerald-500';
+
+                      if (user.doingCount === 0) {
+                        progressColor = 'bg-zinc-800';
+                      } else if (user.doingCount === 2) {
+                        progressColor = 'bg-brand-yellow';
+                      } else if (user.doingCount >= 3) {
+                        progressColor = 'bg-red-500';
+                      }
+
+                      const percentage = user.doingCount === 0 ? 0 : Math.min((user.doingCount / 4) * 100, 100);
+
+                      return (
+                        <div key={user.id} className="flex flex-col gap-2 p-3 rounded-lg bg-brand-cardBg/40 border border-brand-border/30 hover:border-brand-border transition-colors">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-8 h-8 rounded-full bg-brand-border flex items-center justify-center font-bold text-xs text-brand-yellow border border-brand-border shrink-0">
+                                {user.initials}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-gray-200 truncate">{user.name}</p>
+                              </div>
+                            </div>
+                            
+                            <div className="flex flex-wrap gap-1 shrink-0 justify-end max-w-[55%]">
+                              {user.overdueCount > 0 && (
+                                <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded border bg-red-950/40 text-red-400 border-red-900/30 uppercase tracking-wider whitespace-nowrap animate-pulse">
+                                  {user.overdueCount} atrasada{user.overdueCount > 1 ? 's' : ''}
+                                </span>
+                              )}
+                              
+                              {user.doingCount > 0 ? (
+                                <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wider whitespace-nowrap ${
+                                  user.doingCount >= 3 
+                                    ? 'bg-red-950/40 text-red-400 border-red-900/30' 
+                                    : user.doingCount === 2 
+                                      ? 'bg-amber-950/40 text-brand-yellow border-amber-900/30' 
+                                      : 'bg-emerald-950/40 text-emerald-400 border-emerald-900/30'
+                                }`}>
+                                  {user.doingCount} em andamento
+                                </span>
+                              ) : (
+                                user.overdueCount === 0 && (
+                                  <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded border bg-zinc-850 text-zinc-400 border-zinc-700/30 uppercase tracking-wider whitespace-nowrap">
+                                    {user.totalAssigned > 0 ? 'Sem andamento' : 'Disponível'}
+                                  </span>
+                                )
+                              )}
+                            </div>
+                          </div>
+                          <div className="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full ${progressColor} transition-all duration-500`}
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -354,7 +407,7 @@ export const Dashboard: React.FC = () => {
                     <div className="space-y-1.5 pl-1">
                       {overloadedUsers.map((u) => (
                         <p key={u.id} className="text-xs text-zinc-350 leading-tight">
-                          ⚠️ <strong className="text-white">{u.name}</strong> tem <span className="text-red-400 font-bold">{u.doingCount} itens</span>.
+                          <strong className="text-white">{u.name}</strong> tem <span className="text-red-400 font-bold">{u.doingCount} itens</span>.
                         </p>
                       ))}
                     </div>
@@ -372,7 +425,7 @@ export const Dashboard: React.FC = () => {
                     <div className="space-y-1.5 pl-1">
                       {idleUsers.map((u) => (
                         <p key={u.id} className="text-xs text-zinc-350 leading-tight">
-                          💡 <strong className="text-white">{u.name}</strong> está com <span className="text-emerald-400 font-bold">0 tarefas</span>.
+                          <strong className="text-white">{u.name}</strong> está com <span className="text-emerald-400 font-bold">0 tarefas</span>.
                         </p>
                       ))}
                     </div>

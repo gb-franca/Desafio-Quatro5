@@ -19,6 +19,18 @@ interface TeamManagerModalProps {
   onClose: () => void;
 }
 
+const PREDEFINED_ROLES = [
+  'Tech Lead',
+  'Designer UI/UX',
+  'Dev Backend',
+  'Dev Frontend',
+  'QA Engineer',
+  'Product Owner',
+  'DevOps Engineer',
+  'Copywriter',
+  'Marketing Specialist'
+];
+
 export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({ isOpen, onClose }) => {
   const { users, addUser, removeUser } = useTaskStore();
   const [name, setName] = useState('');
@@ -129,13 +141,18 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({ isOpen, onCl
 
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Cargo</label>
-                <input
-                  type="text"
-                  placeholder="Ex: Designer UI/UX"
+                <select
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
-                  className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white placeholder-zinc-650 focus:outline-none focus:border-brand-yellow/50 transition-colors"
-                />
+                  className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-yellow/50 transition-colors cursor-pointer w-full"
+                >
+                  <option value="" className="text-zinc-500 bg-zinc-900">Selecione um cargo...</option>
+                  {PREDEFINED_ROLES.map((r) => (
+                    <option key={r} value={r} className="text-white bg-zinc-900">
+                      {r}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
