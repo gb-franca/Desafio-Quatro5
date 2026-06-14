@@ -14,7 +14,6 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:../dev.db" // Caminho relativo para a base sqlite local
 }
 
 /// Representa um membro da equipe responsável por executar tarefas no Kanban.
