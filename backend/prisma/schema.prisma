@@ -1,7 +1,12 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
+// ==========================================
+// @file schema.prisma
+// @description Definição do esquema do banco de dados (Prisma) para o TaskFlow.
+//              Mapeia os modelos User e Task no SQLite.
+// @version 1.0.0
+// @date 2026-06-14
+// @history
+//  - 1.0.0 (2026-06-14): Criação das tabelas User e Task com relacionamentos.
+// ==========================================
 
 generator client {
   provider = "prisma-client-js"
@@ -9,27 +14,31 @@ generator client {
 
 datasource db {
   provider = "sqlite"
+  url      = "file:../dev.db" // Caminho relativo para a base sqlite local
 }
 
+/// Representa um membro da equipe responsável por executar tarefas no Kanban.
 model User {
-  id        String   @id @default(uuid())
-  name      String
-  role      String   // Ex: "Designer", "Dev Backend"
-  initials  String   // Ex: "AB" para Ana Bragança, como no seu protótipo
-  tasks     Task[]
-  createdAt DateTime @default(now())
+  id        String   @id @default(uuid()) // Identificador único gerado automaticamente (UUID)
+  name      String                        // Nome completo do usuário
+  role      String                        // Cargo/Função desempenhada (ex: Dev, Designer)
+  initials  String                        // Iniciais do nome para exibição em avatares (ex: JD, AB)
+  tasks     Task[]                        // Relação com as tarefas atribuídas ao usuário
+  createdAt DateTime @default(now())      // Data e hora de criação do cadastro
 }
 
+/// Representa uma atividade cadastrada no quadro Kanban.
 model Task {
-  id          String   @id @default(uuid())
-  title       String
-  area        String   // Ex: "DESIGN", "BACKEND", "MARKETING"
-  status      String   @default("BACKLOG") // BACKLOG, DOING, REVIEW, DONE
-  dueDate     DateTime // Para calcularmos o termômetro de prazos (Atrasado/Risco)
+  id          String   @id @default(uuid()) // Identificador único da tarefa (UUID)
+  title       String                        // Título/Descrição da atividade
+  area        String                        // Área de atuação da tarefa (ex: DESIGN, FRONTEND, QA)
+  status      String   @default("BACKLOG")  // Status do fluxo: BACKLOG, DOING, REVIEW ou DONE
+  dueDate     DateTime                      // Data limite para conclusão da tarefa
   
+  // Relacionamento opcional com User (uma tarefa pode estar sem responsável)
   assignee    User?    @relation(fields: [assigneeId], references: [id])
   assigneeId  String?
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())      // Registro de criação da tarefa
+  updatedAt   DateTime @updatedAt           // Atualização automática ao modificar a tarefa
 }
