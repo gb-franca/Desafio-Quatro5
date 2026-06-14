@@ -53,12 +53,16 @@ desafio-quatro5/
    ```bash
    npm install
    ```
-3. Execute as migrações e popule o banco SQLite com a semente de dados de exemplo (isso criará automaticamente a equipe de 10 membros e as 14 tarefas distribuídas):
+3. Crie o arquivo de configuração de ambiente `.env` copiando o modelo disponibilizado:
+   ```bash
+   cp .env.example .env
+   ```
+4. Execute as migrações e popule o banco SQLite com a semente de dados de exemplo (isso criará automaticamente a equipe de 10 membros e as 14 tarefas distribuídas):
    ```bash
    npx prisma migrate dev --name init
    npx prisma db seed
    ```
-4. Inicie o servidor de desenvolvimento:
+5. Inicie o servidor de desenvolvimento:
    ```bash
    npm run dev
    ```
